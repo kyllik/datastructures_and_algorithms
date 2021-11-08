@@ -179,6 +179,18 @@ public:
 
 private:
     // Add stuff needed for your class implementation here
+    struct Town
+    {
+        TownID id;
+        Name name;
+        Coord coord;
+        int tax;
+        Town* parent;
+        std::vector<Town*> children;
+    };
+
+    std::unordered_map<TownID, Town> towns_;
+    std::vector<TownID> towns_vector_;
 
 };
 
