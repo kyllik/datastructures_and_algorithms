@@ -14,6 +14,7 @@
 #include <limits>
 #include <functional>
 #include <exception>
+#include <map>
 
 // Types for IDs
 using TownID = std::string;
@@ -95,39 +96,39 @@ public:
     Datastructures();
     ~Datastructures();
 
-    // Estimate of performance:
+    // Estimate of performance: 1
     // Short rationale for estimate:
     unsigned int town_count();
 
-    // Estimate of performance:
+    // Estimate of performance: 1
     // Short rationale for estimate:
     void clear_all();
 
-    // Estimate of performance:
+    // Estimate of performance: 1
     // Short rationale for estimate:
     bool add_town(TownID id, Name const& name, Coord coord, int tax);
 
-    // Estimate of performance:
+    // Estimate of performance: 1
     // Short rationale for estimate:
     Name get_town_name(TownID id);
 
-    // Estimate of performance:
+    // Estimate of performance: 1
     // Short rationale for estimate:
     Coord get_town_coordinates(TownID id);
 
-    // Estimate of performance:
+    // Estimate of performance: 1
     // Short rationale for estimate:
     int get_town_tax(TownID id);
 
-    // Estimate of performance:
+    // Estimate of performance: 1
     // Short rationale for estimate:
     std::vector<TownID> all_towns();
 
-    // Estimate of performance:
+    // Estimate of performance: N
     // Short rationale for estimate:
     std::vector<TownID> find_towns(Name const& name);
 
-    // Estimate of performance:
+    // Estimate of performance: 1
     // Short rationale for estimate:
     bool change_town_name(TownID id, Name const& newname);
 
@@ -139,15 +140,15 @@ public:
     // Short rationale for estimate:
     std::vector<TownID> towns_distance_increasing();
 
-    // Estimate of performance:
+    // Estimate of performance: 1
     // Short rationale for estimate:
     TownID min_distance();
 
-    // Estimate of performance:
+    // Estimate of performance: 1
     // Short rationale for estimate:
     TownID max_distance();
 
-    // Estimate of performance:
+    // Estimate of performance: 1
     // Short rationale for estimate:
     bool add_vassalship(TownID vassalid, TownID masterid);
 
@@ -189,8 +190,11 @@ private:
         std::vector<Town*> children;
     };
 
-    std::unordered_map<TownID, Town> towns_;
-    std::vector<TownID> towns_vector_;
+    std::map<TownID, Town> towns_;
+    std::vector<TownID> towns_alphabetical_;
+    std::vector<TownID> towns_distance_;
+    bool alphabetical_order_;
+    bool distance_order_;
 
 };
 
