@@ -1,8 +1,8 @@
 // Datastructures.hh
 //
-// Student name:
-// Student email:
-// Student number:
+// Student Emma Sjöholm:
+// Student emma.sjoholm@tuni.fi:
+// Student 291683:
 
 #ifndef DATASTRUCTURES_HH
 #define DATASTRUCTURES_HH
@@ -96,106 +96,127 @@ public:
     Datastructures();
     ~Datastructures();
 
-    // Estimate of performance: 1
-    // Short rationale for estimate:
+    // Estimate of performance: Θ(1)
+    // Short rationale for estimate: complexity of std::size is constant
     unsigned int town_count();
 
-    // Estimate of performance: 1
-    // Short rationale for estimate:
+    // Estimate of performance: Θ(3N) = Θ(N)
+    // Short rationale for estimate: complexity of std::clear is linear in the size of container
+    // and there are three data structures which has to be cleared.
     void clear_all();
 
-    // Estimate of performance: 1
-    // Short rationale for estimate:
+    // Estimate of performance: Θ(1), O(N)
+    // Short rationale for estimate: complexity of std::find is constant
+    // for std::unsorted_map, other lines seems to be constant
     bool add_town(TownID id, Name const& name, Coord coord, int tax);
 
-    // Estimate of performance: 1
-    // Short rationale for estimate:
+    // Estimate of performance: Θ(1), O(N)
+    // Short rationale for estimate: depends on std::find again
     Name get_town_name(TownID id);
 
-    // Estimate of performance: 1
-    // Short rationale for estimate:
+    // Estimate of performance: Θ(1), O(N)
+    // Short rationale for estimate: depends on std::find again
     Coord get_town_coordinates(TownID id);
 
-    // Estimate of performance: 1
-    // Short rationale for estimate:
+    // Estimate of performance: Θ(1), O(N)
+    // Short rationale for estimate: depends on std::find again
     int get_town_tax(TownID id);
 
-    // Estimate of performance: 1
-    // Short rationale for estimate:
+    // Estimate of performance: Θ(1), O(1)
+    // Short rationale for estimate: since the order of TownID:s doesn't matter
+    // here, we already have the datastructure to return
     std::vector<TownID> all_towns();
 
-    // Estimate of performance: N
-    // Short rationale for estimate:
+    // Estimate of performance: O(N)
+    // Short rationale for estimate: function is linear since it has to loop trough
+    // every town and check if the town name is same as parameter name
     std::vector<TownID> find_towns(Name const& name);
 
-    // Estimate of performance: 1
-    // Short rationale for estimate:
+    // Estimate of performance: Θ(1), O(N)
+    // Short rationale for estimate: depends on std::find again
     bool change_town_name(TownID id, Name const& newname);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: best case: Ω(1), Θ(N log N), O(N log N)
+    // Short rationale for estimate: in best case, we do not need sorting but
+    // when not sorted, complexity of mergesort is N log N
     std::vector<TownID> towns_alphabetically();
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: best case: Ω(1), Θ(N log N), O(N log N)
+    // Short rationale for estimate: in best case, we do not need sorting but
+    // when not sorted, complexity of mergesort is N log N
     std::vector<TownID> towns_distance_increasing();
 
-    // Estimate of performance: 1
-    // Short rationale for estimate:
+    // Estimate of performance: best case: Ω(1), Θ(N log N), O(N log N)
+    // Short rationale for estimate: in best case, we do not need sorting but
+    // when not sorted, complexity of mergesort is N log N
     TownID min_distance();
 
-    // Estimate of performance: 1
-    // Short rationale for estimate:
+    // Estimate of performance: best case: Ω(1), Θ(N log N), O(N log N)
+    // Short rationale for estimate: in best case, we do not need sorting but
+    // when not sorted, complexity of mergesort is N log N
     TownID max_distance();
 
-    // Estimate of performance: 1
-    // Short rationale for estimate:
+    // Estimate of performance: Θ(1), O(N)
+    // Short rationale for estimate: std::find is linear in worst case, but on
+    // average this function is constant
     bool add_vassalship(TownID vassalid, TownID masterid);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: Θ(1), O(N)
+    // Short rationale for estimate: std::find is linear in worst case, but on
+    // average this function seems to be constant
     std::vector<TownID> get_town_vassals(TownID id);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: Ω(1), O(N)
+    // Short rationale for estimate: in worst case this function is linear,
+    // it's hard to evaluate complexity of average case
     std::vector<TownID> taxer_path(TownID id);
 
     // Non-compulsory phase 1 operations
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: Ω(1), Θ(1), O(N)
+    // Short rationale for estimate: depends again on std::find
     bool remove_town(TownID id);
 
-    // Estimate of performance:
+    // Estimate of performance: Ω(N log N), Θ(N log N), O(N log N)
     // Short rationale for estimate:
     std::vector<TownID> towns_nearest(Coord coord);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: not implemented
+    // Short rationale for estimate: not implemented
     std::vector<TownID> longest_vassal_path(TownID id);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: Ω(1), O(N)
+    // Short rationale for estimate: because of for loop this function is linear
+    // in worst case
     int total_net_tax(TownID id);
 
 private:
     // Add stuff needed for your class implementation here
+
+    void Merge(std::vector<std::string>& v, int s, int m, int e);
+
+    void MergeSort(std::vector<std::string>& v, int s, int e);
+
+    double distanceCalculate(Coord coord1, Coord coord2);
+
+
     struct Town
     {
         TownID id;
         Name name;
         Coord coord;
         int tax;
-        Town* parent;
-        std::vector<Town*> children;
+        TownID master;
+        std::vector<TownID> vassals;
     };
 
-    std::map<TownID, Town> towns_;
+    std::unordered_map<TownID, Town> towns_;
     std::vector<TownID> towns_alphabetical_;
     std::vector<TownID> towns_distance_;
     bool alphabetical_order_;
     bool distance_order_;
-
+    bool sorting_by_distance;
+    Coord coord_to_compare_;
 };
 
 #endif // DATASTRUCTURES_HH

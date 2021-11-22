@@ -1,8 +1,8 @@
 // Datastructures.cc
 //
-// Student name:
-// Student email:
-// Student number:
+// Student Emma Sjöholm:
+// Student emma.sjoholm@tuni.fi:
+// Student 291683:
 
 #include "datastructures.hh"
 
@@ -48,13 +48,11 @@ Datastructures::~Datastructures()
 
 unsigned int Datastructures::town_count()
 {
-    // Replace the line below with your implementation
     return towns_.size();
 }
 
 void Datastructures::clear_all()
 {
-    // Replace the line below with your implementation
     towns_.clear();
     towns_alphabetical_.clear();
     towns_distance_.clear();
@@ -62,18 +60,19 @@ void Datastructures::clear_all()
 
 bool Datastructures::add_town(TownID id, const Name &name, Coord coord, int tax)
 {
-    // Replace the line below with your implementation
-    // Also uncomment parameters ( /* param */ -> param )
-    if (towns_.count(id)) {
+    if (towns_.find(id) != towns_.end()) {
         return false;
     }
-    std::vector<Town*> children;
-    Town new_town = {id, name, coord, tax, nullptr, children};
+
+    std::vector<TownID> vassals;
+    Town new_town = {id, name, coord, tax, "", vassals};
     towns_[id] = new_town;
     towns_alphabetical_.push_back(id);
     towns_distance_.push_back(id);
+
     alphabetical_order_ = false;
     distance_order_ = false;
+
     return true;
 }
 
@@ -81,6 +80,9 @@ Name Datastructures::get_town_name(TownID id)
 {
     // Replace the line below with your implementation
     // Also uncomment parameters ( /* param */ -> param )
+    if(towns_.find(id)==towns_.end()) {
+        return NO_NAME;
+    }
     return towns_.at(id).name;
 }
 
@@ -88,6 +90,9 @@ Coord Datastructures::get_town_coordinates(TownID id)
 {
     // Replace the line below with your implementation
     // Also uncomment parameters ( /* param */ -> param )
+    if(towns_.find(id)==towns_.end()) {
+        return NO_COORD;
+    }
     return towns_.at(id).coord;
 }
 
@@ -95,6 +100,9 @@ int Datastructures::get_town_tax(TownID id)
 {
     // Replace the line below with your implementation
     // Also uncomment parameters ( /* param */ -> param )
+    if(towns_.find(id)==towns_.end()) {
+        return NO_VALUE;
+    }
     return towns_.at(id).tax;
 }
 
@@ -106,31 +114,32 @@ std::vector<TownID> Datastructures::all_towns()
 
 std::vector<TownID> Datastructures::find_towns(const Name &name)
 {
-    //vois ol tehokkaampi, tutki vielä
-    std::vector<TownID> return_towns;
-    for (TownID n : towns_alphabetical_) {
-        Name n_name = towns_.at(n).name;
-        if (n_name == name) {
-            return_towns.push_back(n);
+    std::vector<TownID> found_towns;
+    for (auto& it : towns_) {
+        if (it.second.name == name) {
+            found_towns.push_back(it.second.id);
         }
     }
-    return return_towns;
+    return found_towns;
 }
 
 bool Datastructures::change_town_name(TownID id, const Name &newname)
 {
-    //handlaa viel se jos id:llä ei löydy kaupunkii
+    if(towns_.find(id)==towns_.end()) {
+        return false;
+    }
     towns_.at(id).name = newname;
-    return 1;
+    return true;
 }
 
 std::vector<TownID> Datastructures::towns_alphabetically()
 {
-    // ei aakkosjärjestämistä vielä
     if (town_count() == 1 or town_count() == 0 or alphabetical_order_ == true) {
         return towns_alphabetical_;
     } else {
-        //sorttaus
+        sorting_by_distance = false;
+        MergeSort(towns_alphabetical_, 0, towns_alphabetical_.size() - 1);
+        alphabetical_order_ = true;
         return towns_alphabetical_;
     }
 }
@@ -142,7 +151,10 @@ std::vector<TownID> Datastructures::towns_distance_increasing()
         return towns_distance_;
     } else {
         //sorttaus
-        //sorttauksen jälkeen distance_order_ = true;
+        sorting_by_distance = true;
+        coord_to_compare_ = {.x=0, .y=0};
+        MergeSort(towns_distance_, 0, towns_distance_.size() - 1);
+        distance_order_ = true;
         return towns_distance_;
     }
 }
@@ -150,10 +162,16 @@ std::vector<TownID> Datastructures::towns_distance_increasing()
 TownID Datastructures::min_distance()
 {
     // Replace the line below with your implementation
+    if(towns_.empty()) {
+        return NO_TOWNID;
+    }
     if (distance_order_ == true) {
         return towns_distance_.front();
     } else {
-        //sorttaus
+        sorting_by_distance = true;
+        coord_to_compare_ = {.x=0, .y=0};
+        MergeSort(towns_distance_, 0, towns_distance_.size() - 1);
+        distance_order_ = true;
         return towns_distance_.front();
     }
 }
@@ -161,39 +179,47 @@ TownID Datastructures::min_distance()
 TownID Datastructures::max_distance()
 {
     // Replace the line below with your implementation
+    if(towns_.empty()) {
+        return NO_TOWNID;
+    }
     if (distance_order_ == true) {
         return towns_distance_.back();
     } else {
-        //sorttaus
+        sorting_by_distance = true;
+        coord_to_compare_ = {.x=0, .y=0};
+        MergeSort(towns_distance_, 0, towns_distance_.size() - 1);
+        distance_order_ = true;
         return towns_distance_.back();
     }
 }
 
 bool Datastructures::add_vassalship(TownID vassalid, TownID masterid)
 {
+    if(towns_.find(vassalid)==towns_.end() or towns_.find(masterid)==towns_.end()) {
+        return false;
+    }
     Town vassal = towns_.at(vassalid);
     Town master = towns_.at(masterid);
     //tän pitäs toimii nii et se estää kahta kaupunkia olemasta toistensa vasalleja!
-    if(vassal.parent) { //testaa onko vasallikaupungilla jo isäntäkaupunki
+    if(vassal.master != "") { //testaa onko vasallikaupungilla jo isäntäkaupunki
         return false;
-    } else if (master.parent) {
-        if (master.parent->id.compare(vassalid) == 0) {
+    } else if (master.master != "") {
+        if (towns_.at(master.master).id == vassalid) {
             return false;
         }
     }
-    towns_.at(vassalid).parent = &towns_.at(masterid);
-    towns_.at(masterid).children.push_back(&towns_.at(vassalid));
+    towns_.at(vassalid).master = masterid;
+    towns_.at(masterid).vassals.push_back(vassalid);
     return true;
 }
 
 std::vector<TownID> Datastructures::get_town_vassals(TownID id)
 {
-    // unsorted_mapista hakeminen niin nopeeta ettei childrenien tarttis olla osottimia
-    std::vector<TownID> vassals;
-    for (auto vassal : towns_.at(id).children) {
-        vassals.push_back(vassal->id);
+    if(towns_.find(id)==towns_.end()) {
+        std::vector<TownID> no_townid = {NO_TOWNID};
+        return no_townid;
     }
-    return vassals;
+    return towns_.at(id).vassals;
 }
 
 std::vector<TownID> Datastructures::taxer_path(TownID id)
@@ -202,9 +228,9 @@ std::vector<TownID> Datastructures::taxer_path(TownID id)
     TownID current_id = id;
     while(true) {
         taxer_path.push_back(current_id);
-        Town* parent = towns_.at(current_id).parent;
-        if(parent) {
-            current_id = parent->id;
+        TownID master = towns_.at(current_id).master;
+        if(!master.empty()) {
+            current_id = master;
         } else {
             return taxer_path;
         }
@@ -213,34 +239,124 @@ std::vector<TownID> Datastructures::taxer_path(TownID id)
 
 bool Datastructures::remove_town(TownID id)
 {
-    // Replace the line below with your implementation
-    // Also uncomment parameters ( /* param */ -> param )
-    // poista ensin yhteydet, sitten kaupunki
-    Town town_to_be_removed = towns_.at(id);
-    for (auto child : town_to_be_removed.children) {
-        child->parent = nullptr;
+    if(towns_.find(id)==towns_.end()) {
+        return false;
     }
-    std::vector<Town*> parents_children = town_to_be_removed.parent->children;
-    // poista tosta vektorista tää kaupunki
+
+    Town removable_town = towns_.at(id);
+
+    if(removable_town.master != "") {
+        std::vector<TownID> vassals = towns_.at(removable_town.master).vassals;
+        vassals.erase(std::remove(vassals.begin(),vassals.end(),id),vassals.end());
+        towns_.at(removable_town.master).vassals = vassals;
+        removable_town.master = "";
+    } if(!removable_town.vassals.empty()) {
+        for(TownID vassal : removable_town.vassals) {
+            towns_.at(vassal).master = "";
+        }
+    }
+
+    towns_.erase(id);
+    towns_alphabetical_.erase(std::remove(towns_alphabetical_.begin(),towns_alphabetical_.end(),id),towns_alphabetical_.end());
+    towns_distance_.erase(std::remove(towns_distance_.begin(),towns_distance_.end(),id),towns_distance_.end());
+    return true;
 }
 
-std::vector<TownID> Datastructures::towns_nearest(Coord /*coord*/)
+std::vector<TownID> Datastructures::towns_nearest(Coord coord)
 {
-    // Replace the line below with your implementation
-    // Also uncomment parameters ( /* param */ -> param )
-    throw NotImplemented("towns_nearest()");
+    std::vector<TownID> all_towns = towns_distance_;
+    coord_to_compare_ = coord;
+    MergeSort(all_towns,0,all_towns.size()-1);
+    return all_towns;
 }
 
 std::vector<TownID> Datastructures::longest_vassal_path(TownID /*id*/)
 {
-    // Replace the line below with your implementation
-    // Also uncomment parameters ( /* param */ -> param )
+//    std::vector<TownID> longest_path;
+//    if(towns_.find(id)==towns_.end()) {
+//        std::vector<TownID> no_townid = {NO_TOWNID};
+//        return no_townid;
+//    }
+//    for(auto town : towns_) {
+//        if(town.second.master == nullptr) {
+//            for()
+//        }
+//    }
     throw NotImplemented("longest_vassal_path()");
 }
 
-int Datastructures::total_net_tax(TownID /*id*/)
+int Datastructures::total_net_tax(TownID id)
 {
-    // Replace the line below with your implementation
-    // Also uncomment parameters ( /* param */ -> param )
-    throw NotImplemented("total_net_tax()");
+    Town town = towns_.at(id);
+    int total_net_tax=town.tax;
+    if(!town.vassals.empty()) {
+        for(TownID vassal : town.vassals) {
+            total_net_tax = total_net_tax + floor(towns_.at(vassal).tax/10);
+        }
+    }
+    if(!town.master.empty()) {
+        total_net_tax = total_net_tax - floor(total_net_tax/10);
+    }
+    return total_net_tax;
+}
+
+void Datastructures::Merge(std::vector<std::string> &vec, int start, int middle, int end)
+{
+    std::vector<std::string> temp;
+    int i, j;
+    i = start;
+    j = middle + 1;
+    while (i <= middle && j <= end) {
+        Town town1 = towns_.at(vec[i]);
+        Town town2 = towns_.at(vec[j]);
+        if (sorting_by_distance) {
+            Coord coord1 = town1.coord;
+            Coord coord2 = town2.coord;
+            double distance1 = distanceCalculate(coord1,coord_to_compare_);
+            double distance2 = distanceCalculate(coord2,coord_to_compare_);
+            if(distance1 <= distance2) {
+                temp.push_back(vec[i]);
+                ++i;
+            } else {
+                temp.push_back(vec[j]);
+                ++j;
+            }
+        } else {
+            Name name1 = town1.name;
+            Name name2 = town2.name;
+            if(name1 <= name2) {
+                temp.push_back(vec[i]);
+                ++i;
+            } else {
+                temp.push_back(vec[j]);
+                ++j;
+            }
+        }
+    }
+    while (i <= middle) {
+        temp.push_back(vec[i]);
+        ++i;
+    } while (j <= end) {
+        temp.push_back(vec[j]);
+        ++j;
+    } for (int i = start; i <= end; ++i)
+        vec[i] = temp[i - start];
+}
+
+void Datastructures::MergeSort(std::vector<std::string> &vec, int start, int end)
+{
+    if (start < end) {
+        int middle = (start + end) / 2;
+        MergeSort(vec, start, middle);
+        MergeSort(vec, middle + 1, end);
+        Merge(vec, start, middle, end);
+    }
+}
+
+double Datastructures::distanceCalculate(Coord coord1, Coord coord2)
+{
+    int x = coord1.x - coord2.x;
+    int y = coord1.y - coord2.y;
+    double distance = sqrt(pow(x,2)+pow(y,2));
+    return distance;
 }
