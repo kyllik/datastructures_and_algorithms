@@ -181,13 +181,13 @@ public:
     // Short rationale for estimate:
     std::vector<TownID> towns_nearest(Coord coord);
 
-    // Estimate of performance: not implemented
-    // Short rationale for estimate: not implemented
+    // Estimate of performance: O(N^2)
+    // Short rationale for estimate: function has two loops inside
     std::vector<TownID> longest_vassal_path(TownID id);
 
     // Estimate of performance: Ω(1), O(N)
-    // Short rationale for estimate: because of for loop this function is linear
-    // in worst case
+    // Short rationale for estimate: because of recursion this function is linear
+    // in worst case, if town does not have vassals it is linear
     int total_net_tax(TownID id);
 
 private:
@@ -199,6 +199,10 @@ private:
 
     double distanceCalculate(Coord coord1, Coord coord2);
 
+    int total_net_tax_recursion(TownID id);
+
+    enum Colour { WHITE, GRAY, BLACK};
+
 
     struct Town
     {
@@ -208,6 +212,8 @@ private:
         int tax;
         TownID master;
         std::vector<TownID> vassals;
+        Colour colour;
+        int d;
     };
 
     std::unordered_map<TownID, Town> towns_;
