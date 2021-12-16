@@ -14,6 +14,9 @@
 #include <limits>
 #include <functional>
 #include <exception>
+#include <list>
+#include <memory>
+
 
 // Types for IDs
 using TownID = std::string;
@@ -224,6 +227,43 @@ public:
 
 private:
     // Add stuff needed for your class implementation here
+    void Merge(std::vector<std::string>& v, int s, int m, int e);
+
+    void MergeSort(std::vector<std::string>& v, int s, int e);
+
+    Distance distanceCalculate(Coord coord1, Coord coord2);
+
+    int total_net_tax_recursion(TownID id);
+
+    enum Colour { WHITE, GRAY, BLACK};
+
+
+    struct Town
+    {
+        TownID id;
+        Name name;
+        Coord coord;
+        int tax;
+        TownID master;
+        std::vector<TownID> vassals;
+
+        Colour colour;
+        int d;
+        Town* pi;
+        int de;
+
+        std::unordered_map<std::shared_ptr<Town>, Distance> roads;
+    };
+
+    std::unordered_map<TownID, std::shared_ptr<Town>> towns_;
+    std::vector<TownID> towns_alphabetical_;
+    std::vector<TownID> towns_distance_;
+    bool alphabetical_order_;
+    bool distance_order_;
+    bool sorting_by_distance;
+    Coord coord_to_compare_;
+
+    void relax_a_star(std::shared_ptr<Town> u, std::shared_ptr<Town> v, std::shared_ptr<Town> g);
 
 };
 
