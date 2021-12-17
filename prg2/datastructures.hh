@@ -274,7 +274,6 @@ private:
     Coord coord_to_compare_;
 
     void relax_a_star(std::shared_ptr<Town> u, std::shared_ptr<Town> v, std::shared_ptr<Town> g);
-    bool cycle_found(TownID id);
 
 };
 

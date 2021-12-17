@@ -421,38 +421,6 @@ void Datastructures::relax_a_star(std::shared_ptr<Town> u, std::shared_ptr<Town>
     }
 }
 
-bool Datastructures::cycle_found(TownID id)
-{
-    for(std::pair<TownID, std::shared_ptr<Town>> town : towns_) {
-        town.second->colour = WHITE;
-        town.second->pi = nullptr;
-    }
-    std::shared_ptr<Town> s = towns_.at(id);
-    std::stack<std::shared_ptr<Town>> S;
-    std::shared_ptr<Town> last_visited;
-    while(!S.empty()) {
-        std::shared_ptr<Town> u = S.top();
-        S.pop();
-        if(u->colour==WHITE) {
-            u->colour=GRAY;
-            S.push(u);
-            for(auto road : u->roads) {
-                std::shared_ptr<Town> v = road.first;
-                if(u->id!=id) {
-                    v->pi = &(*u);
-                }
-                if(v->colour==WHITE) {
-                    S.push(v);
-                } else if (v->colour==GRAY and v!=last_visited) {
-                    return true;
-                }
-            }
-        }
-        last_visited = u;
-    }
-    return false;
-}
-
 
 
 //
