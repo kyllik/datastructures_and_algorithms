@@ -14,6 +14,7 @@
 
 #include <queue>
 
+#include <stack>
 
 std::minstd_rand rand_engine; // Reasonably quick pseudo-random generator
 
@@ -126,6 +127,7 @@ bool Datastructures::change_town_name(TownID id, const Name &newname)
         return false;
     }
     towns_.at(id)->name = newname;
+    alphabetical_order_ = false;
     return true;
 }
 
@@ -162,11 +164,20 @@ TownID Datastructures::min_distance()
     if (distance_order_ == true) {
         return towns_distance_.front();
     } else {
-        sorting_by_distance = true;
-        coord_to_compare_ = {.x=0, .y=0};
-        MergeSort(towns_distance_, 0, towns_distance_.size() - 1);
-        distance_order_ = true;
-        return towns_distance_.front();
+        TownID min_distance_town;
+        int min_distance = distanceCalculate(towns_.begin()->second->coord);
+        for(auto town : towns_) {
+            Coord coord = town.second->coord;
+            Distance distance = distanceCalculate(coord);
+            if(distance==0) {
+                return town.second->id;
+            }
+            if(distance<min_distance) {
+                min_distance = distance;
+                min_distance_town = town.second->id;
+            }
+        }
+        return min_distance_town;
     }
 }
 
@@ -178,11 +189,17 @@ TownID Datastructures::max_distance()
     if (distance_order_ == true) {
         return towns_distance_.back();
     } else {
-        sorting_by_distance = true;
-        coord_to_compare_ = {.x=0, .y=0};
-        MergeSort(towns_distance_, 0, towns_distance_.size() - 1);
-        distance_order_ = true;
-        return towns_distance_.back();
+        TownID max_distance_town;
+        int max_distance = 0;
+        for(auto town : towns_) {
+            Coord coord = town.second->coord;
+            Distance distance = distanceCalculate(coord);
+            if(distance>max_distance) {
+                max_distance = distance;
+                max_distance_town = town.second->id;
+            }
+        }
+        return max_distance_town;
     }
 }
 
@@ -404,6 +421,38 @@ void Datastructures::relax_a_star(std::shared_ptr<Town> u, std::shared_ptr<Town>
     }
 }
 
+bool Datastructures::cycle_found(TownID id)
+{
+    for(std::pair<TownID, std::shared_ptr<Town>> town : towns_) {
+        town.second->colour = WHITE;
+        town.second->pi = nullptr;
+    }
+    std::shared_ptr<Town> s = towns_.at(id);
+    std::stack<std::shared_ptr<Town>> S;
+    std::shared_ptr<Town> last_visited;
+    while(!S.empty()) {
+        std::shared_ptr<Town> u = S.top();
+        S.pop();
+        if(u->colour==WHITE) {
+            u->colour=GRAY;
+            S.push(u);
+            for(auto road : u->roads) {
+                std::shared_ptr<Town> v = road.first;
+                if(u->id!=id) {
+                    v->pi = &(*u);
+                }
+                if(v->colour==WHITE) {
+                    S.push(v);
+                } else if (v->colour==GRAY and v!=last_visited) {
+                    return true;
+                }
+            }
+        }
+        last_visited = u;
+    }
+    return false;
+}
+
 
 
 //
@@ -416,22 +465,14 @@ void Datastructures::clear_roads()
     for(std::pair<TownID, std::shared_ptr<Town>> town : towns_) {
         town.second->roads.clear();
     }
+    roads_.clear();
 }
 
 std::vector<std::pair<TownID, TownID>> Datastructures::all_roads()
 {
     std::vector<std::pair<TownID, TownID>> return_vector;
-    for(std::pair<TownID, std::shared_ptr<Town>> town : towns_) {
-        for(std::pair<std::shared_ptr<Town>, Distance> road : town.second->roads) {
-            TownID id1 = road.first->id;
-            TownID id2 = town.second->id;
-            std::pair<TownID,TownID> pair;
-            if(id1 < id2) {
-                pair.first = id1;
-                pair.second = id2;
-                return_vector.push_back(pair);
-            }
-        }
+    for(std::pair<Distance,std::pair<TownID,TownID>> road : roads_) {
+        return_vector.push_back(road.second);
     }
     return return_vector;
 }
@@ -444,6 +485,13 @@ bool Datastructures::add_road(TownID town1, TownID town2)
     Distance d = distanceCalculate(towns_.at(town1)->coord, towns_.at(town2)->coord);
     towns_.at(town2)->roads[towns_.at(town1)] = d;
     towns_.at(town1)->roads[towns_.at(town2)] = d;
+    if(town1 < town2) {
+        std::pair<Distance, std::pair<TownID, TownID>> pair(d,{town1,town2});
+        roads_.insert(pair);
+    } else {
+        std::pair<Distance, std::pair<TownID, TownID>> pair(d,{town2,town1});
+        roads_.insert(pair);
+    }
     return true;
 }
 
@@ -460,6 +508,95 @@ std::vector<TownID> Datastructures::get_roads_from(TownID id)
 }
 std::vector<TownID> Datastructures::any_route(TownID fromid, TownID toid)
 {
+    return shortest_route(fromid, toid);
+}
+
+
+bool Datastructures::remove_road(TownID town1, TownID town2)
+{
+
+    if(towns_.find(town1)==towns_.end() or towns_.find(town2)==towns_.end()) {
+        return false;
+    }
+
+    std::pair<TownID,TownID> pair;
+    if(town1 < town2) {
+        pair = {town1,town2};
+    } else {
+        pair = {town2,town1};
+    }
+    for(std::map<Distance,std::pair<TownID,TownID>>::iterator it = roads_.begin(); it != roads_.end(); it++) {
+        if((it->second) == pair) {
+            roads_.erase(it);
+            break;
+        }
+    }
+
+    if (towns_.at(town1)->roads.erase(towns_.at(town2))==1 and towns_.at(town2)->roads.erase(towns_.at(town1))==1) {
+        return true;
+    }
+    return false;
+}
+
+std::vector<TownID> Datastructures::least_towns_route(TownID fromid, TownID toid)
+{
+    if(towns_.find(fromid)==towns_.end() or towns_.find(toid)==towns_.end()) {
+        return {NO_TOWNID};
+    }
+    std::vector<TownID> return_vector;
+    for(std::pair<TownID, std::shared_ptr<Town>> town : towns_) {
+        town.second->colour = WHITE;
+        town.second->d = -1;
+        town.second->pi = nullptr;
+    }
+    std::shared_ptr<Town> g = towns_.at(toid);
+    bool goal_found = false;
+    std::shared_ptr<Town> s = towns_.at(fromid);
+    s->colour = GRAY;
+    s->d = 0;
+    std::queue<std::shared_ptr<Town>> Q;
+    Q.push(s);
+    while(!Q.empty()) {
+        std::shared_ptr<Town> u = Q.front();
+        Q.pop();
+        for(auto road : u->roads) {
+            std::shared_ptr<Town> v = road.first;
+            if(v==g) {
+                goal_found = true;
+            }
+            if(v->colour==WHITE) {
+                v->colour = GRAY;
+                v->d = u->d + 1;
+                v->pi = &(*u);
+                Q.push(v);
+            }
+        }
+        u->colour = BLACK;
+    }
+    if(goal_found) {
+        Town* temp = 0;
+        temp = &(*g);
+        return_vector.push_back(temp->id);
+        while(temp->id != s->id) {
+            temp = &(*temp->pi);
+            return_vector.push_back(temp->id);
+        }
+        std::reverse(return_vector.begin(),return_vector.end());
+    }
+    return return_vector;
+
+}
+
+std::vector<TownID> Datastructures::road_cycle_route(TownID /*startid*/)
+{
+    // Replace the line below with your implementation
+    // Also uncomment parameters ( /* param */ -> param )
+    throw NotImplemented("road_cycle_route()");
+}
+
+
+std::vector<TownID> Datastructures::shortest_route(TownID fromid, TownID toid)
+{
     if(towns_.find(fromid)==towns_.end() or towns_.find(toid)==towns_.end()) {
         return {NO_TOWNID};
     }
@@ -473,8 +610,8 @@ std::vector<TownID> Datastructures::any_route(TownID fromid, TownID toid)
     std::shared_ptr<Town> s = towns_.at(fromid);
     std::shared_ptr<Town> g = towns_.at(toid);
     std::priority_queue<std::pair<int,std::shared_ptr<Town>>> Q;
-    towns_.at(fromid)->colour = GRAY;
-    towns_.at(fromid)->d = 0;
+    s->colour = GRAY;
+    s->d = 0;
     std::pair<int,std::shared_ptr<Town>> pair;
     pair.first = -s->de;
     pair.second = s;
@@ -509,40 +646,9 @@ std::vector<TownID> Datastructures::any_route(TownID fromid, TownID toid)
     return return_vector;
 }
 
-
-bool Datastructures::remove_road(TownID town1, TownID town2)
-{
-    if(towns_.find(town1)==towns_.end() or towns_.find(town2)==towns_.end()) {
-        return false;
-    } if (towns_.at(town1)->roads.erase(towns_.at(town2))==1 and towns_.at(town2)->roads.erase(towns_.at(town1))==1) {
-        return true;
-    }
-    return false;
-}
-
-std::vector<TownID> Datastructures::least_towns_route(TownID /*fromid*/, TownID /*toid*/)
-{
-    // Replace the line below with your implementation
-    // Also uncomment parameters ( /* param */ -> param )
-    throw NotImplemented("least_towns_route()");
-}
-
-std::vector<TownID> Datastructures::road_cycle_route(TownID /*startid*/)
-{
-    // Replace the line below with your implementation
-    // Also uncomment parameters ( /* param */ -> param )
-    throw NotImplemented("road_cycle_route()");
-}
-
-std::vector<TownID> Datastructures::shortest_route(TownID /*fromid*/, TownID /*toid*/)
-{
-    // Replace the line below with your implementation
-    // Also uncomment parameters ( /* param */ -> param )
-    throw NotImplemented("shortest_route()");
-}
-
 Distance Datastructures::trim_road_network()
 {
     // Replace the line below with your implementation
     throw NotImplemented("trim_road_network()");
 }
+

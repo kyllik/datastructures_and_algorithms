@@ -16,6 +16,7 @@
 #include <exception>
 #include <list>
 #include <memory>
+#include <map>
 
 
 // Types for IDs
@@ -183,42 +184,49 @@ public:
 
     // Phase 2 operations
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n^2)
+    // for-loopissa käydään joka n kaupunkia ja joka loopissa poistetaan
+    // enintään n-1 tietä joten pahimmassa tapauksessa tehokkuus on n^2
     void clear_roads();
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n)
+    // Short rationale for estimate: for-silmukka on lineaarinen suhteessa
+    // teiden määrään
     std::vector<std::pair<TownID, TownID>> all_roads();
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: Ω(1), O(n)
+    // Short rationale for estimate: id:n olemassaolon tarkastaminen lineaarista
+    // pahimmassa tapauksessa, vakioaikainen parhaassa tapauksessa, mappiin lisäys
+    // logaritmista suhteessa teiden kokoon
     bool add_road(TownID town1, TownID town2);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n)
+    // Short rationale for estimate: for-silmukka lineaarinen
     std::vector<TownID> get_roads_from(TownID id);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: Θ(nlogn)
+    // Short rationale for estimate: sama kuin shortest_routella, koska
+    // palauttaa sen tuloksen
     std::vector<TownID> any_route(TownID fromid, TownID toid);
 
     // Non-compulsory phase 2 operations
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n)
+    // Short rationale for estimate: for-silmukka lineaarinen suhteessa teiden määrään
     bool remove_road(TownID town1, TownID town2);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: O(n+k), jossa n=solmujen määrä, k=kaarien määrä
+    // Short rationale for estimate: BFS:n tehokkuus, kun kaikki solmut käydään
+    // läpi eli tämän funktion huonoin tapaus
     std::vector<TownID> least_towns_route(TownID fromid, TownID toid);
 
     // Estimate of performance:
     // Short rationale for estimate:
     std::vector<TownID> road_cycle_route(TownID startid);
 
-    // Estimate of performance:
-    // Short rationale for estimate:
+    // Estimate of performance: Θ(nlogn)
+    // Short rationale for estimate: A*:n tehokkuutta vaikea arvioida,
+    // nlogn perustuu perftestillä saatuun tulokseen
     std::vector<TownID> shortest_route(TownID fromid, TownID toid);
 
     // Estimate of performance:
@@ -231,7 +239,7 @@ private:
 
     void MergeSort(std::vector<std::string>& v, int s, int e);
 
-    Distance distanceCalculate(Coord coord1, Coord coord2);
+    Distance distanceCalculate(Coord coord1, Coord coord2 = {0,0});
 
     int total_net_tax_recursion(TownID id);
 
@@ -255,6 +263,8 @@ private:
         std::unordered_map<std::shared_ptr<Town>, Distance> roads;
     };
 
+    std::multimap<Distance,std::pair<TownID,TownID>> roads_;
+
     std::unordered_map<TownID, std::shared_ptr<Town>> towns_;
     std::vector<TownID> towns_alphabetical_;
     std::vector<TownID> towns_distance_;
@@ -264,6 +274,7 @@ private:
     Coord coord_to_compare_;
 
     void relax_a_star(std::shared_ptr<Town> u, std::shared_ptr<Town> v, std::shared_ptr<Town> g);
+    bool cycle_found(TownID id);
 
 };
 
